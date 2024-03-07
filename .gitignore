@@ -1,0 +1,26 @@
+venv/
+.pytest_cache/
+.mypy_cache/
+.idea/
+.vscode/
+
+# Symlink
+.idea
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Sphinx documentation
+docs/_build/
+
+# Code coverage and tests
+.coverage
+coverage.xml
+/report.xml

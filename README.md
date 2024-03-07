@@ -1,3 +1,3 @@
-# reveal-data-client
+# reveal_data_client
 
-This is a python package for reading the REVEAL dataset. 
+This is a client to read data from the REVEAL dataset.
