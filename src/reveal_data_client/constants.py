@@ -20,17 +20,11 @@ class AnsPeriod(str, Enum):
     STIM3 = "STIM3"
     """Third acute stim of the day."""
 
-    BASE = "BASE"
-    """Baseline_IHG_w/OFF"""
-
     IHG = "IHG"
     """IHG_w/VNS on or off"""
 
     PECO = "PECO"
     """PECO_w/VNS on or off"""
-
-    RECOV = "RECOV"
-    """Recovery_Post-PECO w/VNS on or off"""
 
     HUT = "HUT"
     """HUT w/ VNS on or off"""

@@ -131,7 +131,7 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
         df.set_index(CsvColumn.LAB_CHART_TIME, inplace=True)
 
         # Check the format of the data
-        # self._check_format(df, participant_id, visit_id)
+        self._check_format(df, participant_id, visit_id)
 
         return df
 
@@ -141,7 +141,7 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
         Check the format of the data. Log a warning if the format is not as expected.
         """
         # Check that the columns are as expected
-        expected_columns = set(column.value for column in CsvColumn)
+        expected_columns = set(column.value for column in CsvColumn) - {CsvColumn.LAB_CHART_TIME}
         actual_columns = set(data.columns)
         if expected_columns != actual_columns:
             LOG.warning(
