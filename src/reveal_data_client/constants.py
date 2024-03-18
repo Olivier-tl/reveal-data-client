@@ -29,13 +29,13 @@ class AnsPeriod(str, Enum):
     HUT = "HUT"
     """HUT w/ VNS on or off"""
 
-    BASEIHG = "BASEIHG"
+    BASELINE_IHG = "BASEIHG"
 
-    RECPECO = "RECPECO"
+    RECOVERY_PECO = "RECPECO"
 
-    BASEHUT = "BASEHUT"
+    BASELINE_HUT = "BASEHUT"
 
-    RECHUT = "RECHUT"
+    RECOVERY_HUT = "RECHUT"
 
 
 class VisitID(str, Enum):
@@ -48,3 +48,15 @@ class VisitID(str, Enum):
 
     SV2 = "SV2"
     """Visit 2"""
+
+
+class VnsStatus(str, Enum):
+    """
+    Enum to represent the possible values for the VNS Status.
+    """
+
+    ON = "ON"
+    """VNS is on"""
+
+    OFF = "OFF"
+    """VNS is off"""

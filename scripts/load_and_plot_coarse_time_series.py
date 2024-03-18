@@ -41,33 +41,30 @@ def main(dataset_path: Path) -> None:
         print(f"participant_ids : {participant_id}")
         visit_ids = client.get_visit_ids(participant_id)
         for visit_id in visit_ids:
-            for ans_period in client.get_ans_periods(participant_id, visit_id):
-                for is_vns_on in [True, False]:
-                    df = client.coarse_time_series.get_data_for_ans_period(
-                        participant_id, visit_id, ans_period, is_vns_on
-                    )
-                    if len(df) == 0:
-                        continue
-                    elapsed = df.index[-1] - df.index[0]
-                    sampling_rate = len(df) / elapsed.total_seconds()
-                    df = df.select_dtypes(include="number")  # Select only numerical columns
-                    df.index = (
-                        df.index.total_seconds()
-                    )  # Plotly express does not support timedelta index
-                    fig = px.line(
-                        df, x=df.index, y=df.columns, title=f"{participant_id}_{visit_id}"
-                    )
-                    fig_path = (
-                        plot_dir
-                        / f"{participant_id}_{visit_id.value}_{ans_period.value}_{is_vns_on}.html"
-                    )
-                    fig.write_html(fig_path)
-                    LOG.info(
-                        f"Plotting participant {participant_id}, visit {visit_id}, ANS period "
-                        f'{ans_period}, VNS {"ON" if is_vns_on else "OFF"}.\n'
-                        f"Elapsed time: {elapsed}, sampling rate: {sampling_rate} Hz.\n"
-                        f"Plot saved to {fig_path}\n"
-                    )
+            for ans_period, vns_status in client.get_ans_periods_and_vns_status(
+                participant_id, visit_id
+            ):
+                df = client.coarse_time_series.get_data_for_ans_period(
+                    participant_id, visit_id, ans_period, vns_status
+                )
+                elapsed = df.index[-1] - df.index[0]
+                sampling_rate = len(df) / elapsed.total_seconds()
+                df = df.select_dtypes(include="number")  # Select only numerical columns
+                df.index = (
+                    df.index.total_seconds()
+                )  # Plotly express does not support timedelta index
+                fig = px.line(df, x=df.index, y=df.columns, title=f"{participant_id}_{visit_id}")
+                fig_path = (
+                    plot_dir
+                    / f"{participant_id}_{visit_id.value}_{ans_period.value}_{vns_status.value}.html"
+                )
+                fig.write_html(fig_path)
+                LOG.info(
+                    f"Plotting participant {participant_id}, visit {visit_id}, ANS period "
+                    f"{ans_period}, VNS {vns_status.value}.\n"
+                    f"Elapsed time: {elapsed}, sampling rate: {sampling_rate} Hz.\n"
+                    f"Plot saved to {fig_path}\n"
+                )
 
 
 if __name__ == "__main__":
