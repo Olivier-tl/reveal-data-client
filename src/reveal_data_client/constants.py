@@ -44,7 +44,6 @@ class AnsPeriod(str, Enum):
     RECHUT = "RECHUT"
 
 
-
 class VisitID(str, Enum):
     """
     Enum to represent the possible values for the Visit ID.

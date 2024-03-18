@@ -170,5 +170,5 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
             LOG.warning(
                 "Unexpected ANS periods in the data. Expected: %s, Actual: %s",
                 expected_ans_periods,
-                actual_ans_periods
+                actual_ans_periods,
             )
