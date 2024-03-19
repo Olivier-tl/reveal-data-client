@@ -3,7 +3,7 @@
 from enum import Enum
 
 
-class CsvColumn(str, Enum):
+class CsvColumn(Enum):
     """
     Enum to represent the columns in the CSV file.
     """
@@ -29,3 +29,11 @@ class CsvColumn(str, Enum):
     STIMULATOR = "Stimulator"
     INTEGRATED_MSNA = "Integrated_MSNA"
     COMMENT = "Comment"
+
+    @classmethod
+    def required(cls) -> list[str]:
+        return [col.value for col in cls if col != cls.LAB_CHART_TIME]
+
+    @classmethod
+    def index(cls) -> str:
+        return cls.LAB_CHART_TIME.value

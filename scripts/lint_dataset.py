@@ -1,17 +1,16 @@
 """This module contains checks for the completness and format of the reveal dataset."""
 
 import argparse
+import logging
 from pathlib import Path
 
 import pandas as pd
 
 from reveal_data_client import RevealDataClient
 from reveal_data_client.constants import AnsPeriod, VisitID
-from reveal_data_client.time_series.coarse.checks import (
-    check_all_expected_ans_periods_and_vns_status_present,
-    check_all_recording_channels_present,
-    check_sampling_rate,
-)
+from reveal_data_client.time_series.coarse.checks import validate_coarse_time_series
+
+LOG = logging.getLogger(__name__)
 
 
 def parse_args() -> argparse.Namespace:
@@ -27,23 +26,6 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def lint_coarse_time_series(client: RevealDataClient) -> None:
-    """Lints the coarse time series for completeness and format."""
-
-    for participant_id in client.get_participant_ids():
-        for visit_id in client.get_visit_ids(participant_id):
-            ans_periods_and_vns_status = client.get_ans_periods_and_vns_status(
-                participant_id, visit_id
-            )
-            check_all_expected_ans_periods_and_vns_status_present(ans_periods_and_vns_status)
-            for ans_period, vns_status in ans_periods_and_vns_status:
-                coarse_time_series = client.coarse_time_series.get_data_for_ans_period(
-                    participant_id, visit_id, ans_period, vns_status
-                )
-                check_all_recording_channels_present(coarse_time_series)
-                check_sampling_rate(coarse_time_series)
-
-
 def lint_dataset(dataset_path: Path) -> None:
     """
     We lint the dataset for data completeness and format. We check the following:
@@ -56,12 +38,22 @@ def lint_dataset(dataset_path: Path) -> None:
     """
     client = RevealDataClient.from_path(dataset_path)
 
-    print("Client created")
-
-    lint_coarse_time_series(client)
+    checks = validate_coarse_time_series(client)
     # TODO: Add checks for the other data sources
+
+    successful_checks = [check for check in checks if check.passed]
+    LOG.info(f"{len(successful_checks)}/{len(checks)} checks passed.")
+
+    if len(successful_checks) == len(checks):
+        LOG.info("All checks passed. 🌟")
+    else:
+        failed_checks = [check for check in checks if not check.passed]
+        LOG.error(f"{len(failed_checks)}/{len(checks)} checks failed.")
+        for check in failed_checks:
+            LOG.error(check.details)
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     args = parse_args()
     lint_dataset(args.dataset_path)

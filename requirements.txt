@@ -15,8 +15,8 @@ mypy==1.8.0
 mypy-extensions==1.0.0
 numpy==1.26.4
 packaging==23.2
-pandas==1.5.3
-pandas-stubs==2.2.0.240218
+pandas==2.2.1
+pandas-stubs==2.2.1.240316
 pathspec==0.12.1
 pillow==10.2.0
 platformdirs==4.2.0
