@@ -1,49 +1,21 @@
 """This modules implements the `TimeSeriesClient` interface for the coarse time series data."""
 
 import logging
-from enum import Enum
 from functools import lru_cache
 from pathlib import Path
 from typing import Sequence
 
 import pandas as pd
 
-from reveal_data_client.constants import AnsPeriod, VisitID
+from reveal_data_client.constants import AnsPeriod, VisitID, VnsStatus
 from reveal_data_client.time_series.api import TimeSeriesClient
+from reveal_data_client.time_series.coarse.constants import CsvColumn
 
 PRIMARY_DIR = Path("primary")
 PARTICIPANT_DIR_STR = "sub-{participant_id}"
 FILENAME_STR = "{participant_id}_{visit_id}_all.csv"
 MAX_CACHE_SIZE = 20  # Maximum number of items to cache in the LRU cache (~200MB per file => 4GB)
 LOG = logging.getLogger(__name__)
-
-
-class CsvColumn(str, Enum):
-    """
-    Enum to represent the columns in the CSV file.
-    """
-
-    PARTICIPANT_ID = "Participant_ID"
-    VISIT_ID = "Visit_ID"
-    ANS_PERIOD = "ANS_Period"
-    ANS_STATUS = "ANS_Status"
-    LAB_CHART_TIME = "LabChartTime"
-    ECG = "ECG"
-    NIBP = "NIBP"
-    HANDGRIP = "Handgrip"
-    RESPIRATORY_WAVEFORM = "Respiratory_Waveform"
-    SYSTOLIC = "Systolic"
-    DIASTOLIC = "Diastolic"
-    MEAN = "Mean"
-    HEART_RATE = "HR"
-    RAW_MSNA = "Raw MSNA"
-    FILTERED_MSNA = "Filtered_MSNA"
-    RMS_MSNA = "RMS_MSNA"
-    RESPIRATORY_RATE = "Respiratory Rate"
-    PERCENT_MVC = "%MVC"
-    STIMULATOR = "Stimulator"
-    INTEGRATED_MSNA = "Integrated_MSNA"
-    COMMENT = "Comment"
 
 
 class CoarseTimeSeriesClient(TimeSeriesClient):
@@ -57,7 +29,6 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
 
         :param dataset_path: The path to the root directory of the dataset.
         """
-        self._dataset_path = dataset_path
         self._participants_path = dataset_path / PRIMARY_DIR
 
     def get_participant_ids(self) -> Sequence[str]:
@@ -90,23 +61,27 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
                 LOG.warning("Participant file %s does not have a valid name, skipping.", f)
         return ids
 
-    def get_ans_periods(self, participant_id: str, visit_id: VisitID) -> Sequence[AnsPeriod]:
+    def get_ans_periods_and_vns_status(
+        self, participant_id: str, visit_id: VisitID
+    ) -> Sequence[tuple[AnsPeriod, VnsStatus]]:
+        """Gets unique pairs of ANS periods and VNS status for a participant and visit."""
         data = self._load_data(participant_id, visit_id)
-        ans_periods_str = data[
-            (data[CsvColumn.PARTICIPANT_ID] == participant_id)
-            & (data[CsvColumn.VISIT_ID] == visit_id)
-        ][CsvColumn.ANS_PERIOD].unique()
-        return [AnsPeriod(period) for period in ans_periods_str]
+        return [
+            (AnsPeriod(ans_period), VnsStatus(vns_status))
+            for ans_period, vns_status in set(
+                zip(data[CsvColumn.ANS_PERIOD], data[CsvColumn.ANS_STATUS])
+            )
+        ]
 
     def get_data_for_ans_period(
-        self, participant_id: str, visit_id: VisitID, ans_period: AnsPeriod, is_vns_on: bool
+        self, participant_id: str, visit_id: VisitID, ans_period: AnsPeriod, vns_status: VnsStatus
     ) -> pd.DataFrame:
         data = self._load_data(participant_id, visit_id)
         return data[
             (data[CsvColumn.PARTICIPANT_ID] == participant_id)
             & (data[CsvColumn.VISIT_ID] == visit_id)
             & (data[CsvColumn.ANS_PERIOD] == ans_period)
-            & (data[CsvColumn.ANS_STATUS] == ("ON" if is_vns_on else "OFF"))
+            & (data[CsvColumn.ANS_STATUS] == vns_status)
         ]
 
     @lru_cache(maxsize=MAX_CACHE_SIZE)
@@ -130,45 +105,4 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
         # Set the index to the time column
         df.set_index(CsvColumn.LAB_CHART_TIME, inplace=True)
 
-        # Check the format of the data
-        self._check_format(df, participant_id, visit_id)
-
         return df
-
-    @staticmethod
-    def _check_format(data: pd.DataFrame, participant_id: str, visit_id: VisitID) -> None:
-        """
-        Check the format of the data. Log a warning if the format is not as expected.
-        """
-        # Check that the columns are as expected
-        expected_columns = set(column.value for column in CsvColumn) - {CsvColumn.LAB_CHART_TIME}
-        actual_columns = set(data.columns)
-        if expected_columns != actual_columns:
-            LOG.warning(
-                "Unexpected columns in the data. Expected: %s, Actual: %s",
-                expected_columns,
-                actual_columns,
-            )
-
-        # Check that the participant ID and visit ID are as expected. Only 1 participant and 1 visit
-        # should be present in the data.
-        actual_participant_ids = set(data[CsvColumn.PARTICIPANT_ID].unique())
-        actual_visit_ids = set(data[CsvColumn.VISIT_ID].unique())
-        if len(actual_participant_ids) != 1:
-            LOG.warning("Expected 1 participant ID, found {%s}", len(actual_participant_ids))
-        if len(actual_visit_ids) != 1:
-            LOG.warning("Expected 1 visit ID, found {%s}", len(actual_visit_ids))
-        if participant_id not in actual_participant_ids:
-            LOG.warning("Participant ID {%s} not found in the data", participant_id)
-        if visit_id.value not in actual_visit_ids:
-            LOG.warning("Visit ID {%s} not found in the data", visit_id.value)
-
-        # Check that the ANS period is as expected
-        actual_ans_periods = set(data[CsvColumn.ANS_PERIOD].unique())
-        expected_ans_periods = {period.value for period in AnsPeriod}
-        if actual_ans_periods != expected_ans_periods:
-            LOG.warning(
-                "Unexpected ANS periods in the data. Expected: %s, Actual: %s",
-                expected_ans_periods,
-                actual_ans_periods,
-            )
