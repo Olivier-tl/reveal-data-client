@@ -10,10 +10,13 @@ import pandas as pd
 from reveal_data_client.constants import AnsPeriod, VisitID, VnsStatus
 from reveal_data_client.time_series.api import TimeSeriesClient
 from reveal_data_client.time_series.coarse.constants import CsvColumn
+from reveal_data_client.time_series.coarse.utils import extract_participant_id
 
 PRIMARY_DIR = Path("primary")
+ANS_DIR = Path("ANS")
+BY_PERIOD_DIR = Path("By Period")
 PARTICIPANT_DIR_STR = "sub-{participant_id}"
-FILENAME_STR = "{participant_id}_{visit_id}_all.csv"
+FILENAME_STR = "{participant_id}_lab_ans_all.csv"
 MAX_CACHE_SIZE = 20  # Maximum number of items to cache in the LRU cache (~200MB per file => 4GB)
 LOG = logging.getLogger(__name__)
 
@@ -36,9 +39,9 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
         ids = []
         for participant_folder in participant_folders:
             try:
-                participant_id = participant_folder.name.split("-")[1]
+                participant_id = extract_participant_id(participant_folder.name)
                 ids.append(participant_id)
-            except IndexError:
+            except ValueError:
                 LOG.warning(
                     "Participant folder %s does not have a valid name, skipping.",
                     participant_folder,
@@ -46,26 +49,18 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
         return ids
 
     def get_visit_ids(self, participant_id: str) -> Sequence[VisitID]:
-        participant_folder = self._participants_path / PARTICIPANT_DIR_STR.format(
-            participant_id=participant_id
-        )
-        participant_files = [f for f in participant_folder.iterdir() if f.is_file()]
-        ids = []
-        for f in participant_files:
-            if f.suffix != ".csv":
-                continue
-            try:
-                visit_id = f.name.split("_")[1]
-                ids.append(VisitID(visit_id.upper()))
-            except IndexError:
-                LOG.warning("Participant file %s does not have a valid name, skipping.", f)
-        return ids
+        # TODO: Get the visit IDs from the files in the "By Period" folder once available.
+        #      For now, load the visit IDs from the data file.
+        data = self._load_data(participant_id)
+
+        return [VisitID(id) for id in data[CsvColumn.VISIT_ID].unique()]
 
     def get_ans_periods_and_vns_status(
         self, participant_id: str, visit_id: VisitID
     ) -> Sequence[tuple[AnsPeriod, VnsStatus]]:
         """Gets unique pairs of ANS periods and VNS status for a participant and visit."""
-        data = self._load_data(participant_id, visit_id)
+        data = self._load_data(participant_id)
+        data = data[data[CsvColumn.VISIT_ID] == visit_id]
         return [
             (AnsPeriod(ans_period), VnsStatus(vns_status))
             for ans_period, vns_status in set(
@@ -76,7 +71,7 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
     def get_data_for_ans_period(
         self, participant_id: str, visit_id: VisitID, ans_period: AnsPeriod, vns_status: VnsStatus
     ) -> pd.DataFrame:
-        data = self._load_data(participant_id, visit_id)
+        data = self._load_data(participant_id)
         return data[
             (data[CsvColumn.PARTICIPANT_ID] == participant_id)
             & (data[CsvColumn.VISIT_ID] == visit_id)
@@ -85,24 +80,23 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
         ]
 
     @lru_cache(maxsize=MAX_CACHE_SIZE)
-    def _load_data(self, participant_id: str, visit_id: VisitID) -> pd.DataFrame:
+    def _load_data(self, participant_id: str) -> pd.DataFrame:
 
         file_path = (
             self._participants_path
             / PARTICIPANT_DIR_STR.format(participant_id=participant_id)
-            / FILENAME_STR.format(participant_id=participant_id, visit_id=visit_id.value.lower())
+            / ANS_DIR
+            / FILENAME_STR.format(participant_id=participant_id)
         )
 
         # FIXME: This loads the entire dataset into memory. For large datasets,
         # we should use a more memory-efficient approach. The current sample file
         # is 200MB, which is fine, but we should validate that the full dataset
         # is not too large to fit into memory.
-        df = pd.read_csv(file_path)
+        df = pd.read_csv(file_path, delimiter="|")
 
-        # Convert the time in seconds to a timedelta
-        df[CsvColumn.LAB_CHART_TIME] = pd.to_timedelta(df[CsvColumn.LAB_CHART_TIME], unit="s")
-
-        # Set the index to the time column
-        df.set_index(CsvColumn.LAB_CHART_TIME, inplace=True)
+        # Convert the time in seconds to a timedelta and set it as the index
+        df[CsvColumn.index_col()] = pd.to_timedelta(df[CsvColumn.index_col()], unit="s")
+        df.set_index(CsvColumn.index_col(), inplace=True)
 
         return df
