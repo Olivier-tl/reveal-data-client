@@ -4,7 +4,27 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
+import numpy as np
 import pandas as pd
+
+HOURS_MINUTES_FORMAT = "%H:%M"
+TIME_FORMAT = "%H:%M:%S"
+
+
+def parse_time(time: str | float) -> datetime | None:
+    """Parse a time string in the format HH:MM:SS.FFFFFFF. For example, 14:22:00.0000000."""
+    if isinstance(time, float):
+        if np.isnan(time):
+            return None
+        else:
+            raise ValueError(f"Expected NaN, got {time}")
+    time = time.split(".")[0]  # Discard the fractional seconds
+    return datetime.strptime(time, TIME_FORMAT)
+
+
+def parse_hours_minutes(time: str) -> datetime:
+    """Parse a time string in the format HH:MM. For example, 14:30."""
+    return datetime.strptime(time, HOURS_MINUTES_FORMAT)
 
 
 class ProcessedCSVColumn(str, Enum):
@@ -199,16 +219,16 @@ class BPFeatures:
     sbp_max_narnt: int
     sbp_avg_narnt: int
 
-    bedtime: str
-    awake: str
-    first_nap_start: str
-    first_nap_end: str
+    bedtime: datetime
+    awake: datetime
+    first_nap_start: datetime | None
+    first_nap_end: datetime | None
     first_nap_total: int
-    second_nap_start: str
-    second_nap_end: str
+    second_nap_start: datetime | None
+    second_nap_end: datetime | None
     second_nap_total: int
-    third_nap_start: str
-    third_nap_end: str
+    third_nap_start: datetime | None
+    third_nap_end: datetime | None
     third_nap_total: int
 
     bathroom: int
@@ -255,16 +275,16 @@ class BPFeatures:
             sbp_min_narnt=df[ProcessedCSVColumn.SBP_MIN_NARNT][0],
             sbp_max_narnt=df[ProcessedCSVColumn.SBP_MAX_NARNT][0],
             sbp_avg_narnt=df[ProcessedCSVColumn.SBP_AVG_NARNT][0],
-            bedtime=df[ProcessedCSVColumn.BEDTIME][0],
-            awake=df[ProcessedCSVColumn.AWAKE][0],
-            first_nap_start=df[ProcessedCSVColumn.FIRST_NAP_START][0],
-            first_nap_end=df[ProcessedCSVColumn.FIRST_NAP_END][0],
+            bedtime=parse_hours_minutes(df[ProcessedCSVColumn.BEDTIME][0]),
+            awake=parse_hours_minutes(df[ProcessedCSVColumn.AWAKE][0]),
+            first_nap_start=parse_time(df[ProcessedCSVColumn.FIRST_NAP_START][0]),
+            first_nap_end=parse_time(df[ProcessedCSVColumn.FIRST_NAP_END][0]),
             first_nap_total=df[ProcessedCSVColumn.FIRST_NAP_TOTAL][0],
-            second_nap_start=df[ProcessedCSVColumn.SECOND_NAP_START][0],
-            second_nap_end=df[ProcessedCSVColumn.SECOND_NAP_END][0],
+            second_nap_start=parse_time(df[ProcessedCSVColumn.SECOND_NAP_START][0]),
+            second_nap_end=parse_time(df[ProcessedCSVColumn.SECOND_NAP_END][0]),
             second_nap_total=df[ProcessedCSVColumn.SECOND_NAP_TOTAL][0],
-            third_nap_start=df[ProcessedCSVColumn.THIRD_NAP_START][0],
-            third_nap_end=df[ProcessedCSVColumn.THIRD_NAP_END][0],
+            third_nap_start=parse_time(df[ProcessedCSVColumn.THIRD_NAP_START][0]),
+            third_nap_end=parse_time(df[ProcessedCSVColumn.THIRD_NAP_END][0]),
             third_nap_total=df[ProcessedCSVColumn.THIRD_NAP_TOTAL][0],
             bathroom=df[ProcessedCSVColumn.BATHROOM][0],
             other_than_bathroom=df[ProcessedCSVColumn.OTHER_THAN_BATHROOM][0],
