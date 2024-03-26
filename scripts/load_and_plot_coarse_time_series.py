@@ -5,25 +5,13 @@ import logging
 from pathlib import Path
 
 import plotly.express as px
+from utils import parse_args
 
 from reveal_data_client import RevealDataClient
 
 LOG = logging.getLogger(__name__)
 
 PLOT_DIR = "plots"
-
-
-def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Load and plot coarse time-series data from the Reveal dataset."
-    )
-    parser.add_argument(
-        "dataset_path",
-        type=Path,
-        help="Path to the root directory of the Reveal dataset.",
-    )
-    return parser.parse_args()
 
 
 def main(dataset_path: Path) -> None:
