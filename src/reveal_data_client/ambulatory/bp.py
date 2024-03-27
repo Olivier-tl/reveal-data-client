@@ -18,6 +18,7 @@ def parse_time(time: str | float) -> datetime | None:
             return None
         else:
             raise ValueError(f"Expected NaN, got {time}")
+    # Discarding the fractional seconds, as they are always zero
     time = time.split(".")[0]  # Discard the fractional seconds
     return datetime.strptime(time, TIME_FORMAT)
 
@@ -28,7 +29,12 @@ def parse_hours_minutes(time: str) -> datetime:
 
 
 class ProcessedCSVColumn(str, Enum):
-    """Enum to represent the columns in the processed ambulatory BP CSV file."""
+    """
+    Enum to represent the columns in the processed ambulatory BP CSV file.
+
+    For source of truth, see the "Ambulatory BP Processed" sheet under
+    "docs/Pilot Data Dictionary <version>.xlsx" of the Reveal dataset.
+    """
 
     PARTICIPANT_ID = "Participant_ID"
     """Study ID of participant"""

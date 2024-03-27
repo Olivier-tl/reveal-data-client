@@ -9,7 +9,12 @@ import pandas as pd
 
 
 class ProcessedCSVColumn(str, Enum):
-    """Enum to represent the columns in the processed ambulatory ECG CSV file."""
+    """
+    Enum to represent the columns in the processed ambulatory ECG CSV file.
+
+    For source of truth, see the "Ambulatory ECG Processed" sheet under
+    "docs/Pilot Data Dictionary <version>.xlsx" of the Reveal dataset.
+    """
 
     PARTICIPANT_ID = "Participant_ID"
 
@@ -145,7 +150,7 @@ class ProcessedCSVColumn(str, Enum):
     """Number of pauses"""
 
     PAUSE_TIME = "pause_time"
-    """Length of time for the longest pause"""
+    """Length of time for the longest pause (seconds)"""
 
     OTHER_RHYTHM = "other_rhythm"
     """Free text of other observed rhythms"""
@@ -235,7 +240,7 @@ class ECGFeatures:
             pvc_runs=data[ProcessedCSVColumn.PVC_RUNS][0],
             pvc_longest=data[ProcessedCSVColumn.PVC_LONGEST][0],
             pvc_fastest=data[ProcessedCSVColumn.PVC_FASTEST][0],
-            vt_present=data[ProcessedCSVColumn.VT][0],
+            vt_present=parse_yes_no(data[ProcessedCSVColumn.VT][0]),
             vt_count=data[ProcessedCSVColumn.VT_COUNT][0],
             vt_longest=data[ProcessedCSVColumn.VT_LONGEST][0],
             vt_fastest_hr=data[ProcessedCSVColumn.VT_FASTESTHR][0],
@@ -247,22 +252,31 @@ class ECGFeatures:
             pac_runs=data[ProcessedCSVColumn.PAC_RUNS][0],
             pac_longest=data[ProcessedCSVColumn.PAC_LONGEST][0],
             pac_fastest=data[ProcessedCSVColumn.PAC_FASTEST][0],
-            svt_present=data[ProcessedCSVColumn.SVT_YN][0],
+            svt_present=parse_yes_no(data[ProcessedCSVColumn.SVT_YN][0]),
             svt_count=data[ProcessedCSVColumn.SVT_COUNT][0],
             svt_longest=data[ProcessedCSVColumn.SVT_LONGEST][0],
             svt_fastest_hr=data[ProcessedCSVColumn.SVT_FASTESTHR][0],
-            afib_present=data[ProcessedCSVColumn.AFIB][0],
+            afib_present=parse_yes_no(data[ProcessedCSVColumn.AFIB][0]),
             afib_count=data[ProcessedCSVColumn.AFIB_COUNT][0],
             afib_avg_hr=data[ProcessedCSVColumn.AFIB_AVGHR][0],
             afib_longest=data[ProcessedCSVColumn.AFIB_LONGEST][0],
             afib_fastest_hr=data[ProcessedCSVColumn.AFIB_FASTESTHR][0],
-            aflut_present=data[ProcessedCSVColumn.AFLUT][0],
+            aflut_present=parse_yes_no(data[ProcessedCSVColumn.AFLUT][0]),
             aflut_count=data[ProcessedCSVColumn.AFLUT_COUNT][0],
             aflut_avg_hr=data[ProcessedCSVColumn.AFLUT_AVGHR][0],
             aflut_longest=data[ProcessedCSVColumn.AFLUT_LONGEST][0],
             aflut_fastest_hr=data[ProcessedCSVColumn.AFLUT_FASTESTHR][0],
-            pause_present=data[ProcessedCSVColumn.PAUSE][0],
+            pause_present=parse_yes_no(data[ProcessedCSVColumn.PAUSE][0]),
             pause_count=data[ProcessedCSVColumn.PAUSE_COUNT][0],
             pause_time=data[ProcessedCSVColumn.PAUSE_TIME][0],
             other_rhythm=data[ProcessedCSVColumn.OTHER_RHYTHM][0],
         )
+
+
+def parse_yes_no(value: str) -> bool:
+    """Parses a string value as a boolean. The value must be "yes" or "no"."""
+    if value.lower() == "yes":
+        return True
+    if value.lower() == "no":
+        return False
+    raise ValueError(f"Invalid value for yes/no: {value}")

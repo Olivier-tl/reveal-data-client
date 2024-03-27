@@ -18,7 +18,8 @@ def extract_ecg(df: pd.DataFrame) -> pd.Series:
     """
     Returns a series with the ECG data in mV.
     """
-    # Literal eval the ECG column to get a sequence of lists
+    # Each row of the `ECG` column is a list of ECG samples, e.g. [0.86, 1.1, 0.93, ...]
+    # We convert from string to list using a literal eval
     ecg_col = df["ECG"].apply(lambda x: literal_eval(x))
 
     # Flatten the sequence of lists into a single list, and convert to mV
@@ -47,8 +48,9 @@ def extract_accelerometer(df: pd.DataFrame) -> pd.DataFrame:
     """
     Returns a dataframe with the columns "x", "y", "z" containing the accelerometer data.
     """
-    # Literal eval the accelerometer column to get a sequence of dictionaries
-    # with keys "x", "y", "z"
+    # Each row of the `ACC` column is a list of accelerometer samples. Each sample is a dictionary
+    # with keys "x", "y", "z", e.g. [{"x": 0.1, "y": 0.2, "z": 0.3}, ...]
+    # We convert from string to list of dictionaries using a literal eval
     accelerometer_col = df["ACC"].apply(lambda x: literal_eval(x))
 
     # Flatten the sequence of dictionaries into a single list of dictionaries
