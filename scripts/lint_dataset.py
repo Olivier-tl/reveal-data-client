@@ -1,29 +1,16 @@
 """This module contains checks for the completness and format of the reveal dataset."""
 
-import argparse
 import logging
 from pathlib import Path
 
 import pandas as pd
+from utils import parse_args
 
 from reveal_data_client import RevealDataClient
 from reveal_data_client.constants import AnsPeriod, VisitID
 from reveal_data_client.time_series.coarse.checks import validate_coarse_time_series
 
 LOG = logging.getLogger(__name__)
-
-
-def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(
-        description="Load and plot coarse time-series data from the Reveal dataset."
-    )
-    parser.add_argument(
-        "dataset_path",
-        type=Path,
-        help="Path to the root directory of the Reveal dataset.",
-    )
-    return parser.parse_args()
 
 
 def lint_dataset(dataset_path: Path) -> None:

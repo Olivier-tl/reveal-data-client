@@ -5,6 +5,8 @@ venv/
 .idea/
 .vscode/
 
+*.html
+
 # Symlink
 .idea
 
