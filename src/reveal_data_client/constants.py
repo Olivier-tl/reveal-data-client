@@ -21,13 +21,13 @@ class AnsPeriod(str, Enum):
     """Third acute stim of the day."""
 
     IHG = "IHG"
-    """IHG_w/VNS on or off"""
+    """Handgrip exercise with VNS ON or OFF"""
 
     PECO = "PECO"
-    """PECO_w/VNS on or off"""
+    """Post-exercise circulatory occlusion with VNS ON or OFF"""
 
     HUT = "HUT"
-    """HUT w/ VNS on or off"""
+    """Head-up tilt with VNS ON or OFF"""
 
     BASELINE_IHG = "BASEIHG"
 

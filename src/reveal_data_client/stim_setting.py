@@ -3,25 +3,53 @@
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Sequence
+from typing import Dict, Mapping
 
 import pandas as pd
 
-from reveal_data_client.constants import AnsPeriod
+from reveal_data_client.constants import AnsPeriod, VisitID
 
-STIM_SETTING_FILE_PATH = "primary/stim_settings.csv"
+STIM_OPTION_MAPPING_FILE_PATH = "docs/rc_rand_vns_stim_parameters.csv"
+PARTICIPANT_MAPPING_FILE_PATH = "docs/rc_rand_ans_participant_stim_settings.csv"
 
 
-class StimSettingCsvColumn(str, Enum):
+class StimOption(str, Enum):
+    """
+    Enum to represent the 6 different stimulation options.
+    """
+
+    A = "A"
+    B = "B"
+    C = "C"
+    D = "D"
+    E = "E"
+    F = "F"
+
+
+class StimOptionMappingCsvColumn(str, Enum):
     """
     Enum to represent the columns in the CSV file containing the stimulation settings.
     """
 
     STIM_OPTION = "stim_option"
-    PULSE_WIDTH = "pulsewidth_ms"
+    PULSE_WIDTH = "pulse_width_ms"
     CURRENT = "level_ma"
     FREQUENCY = "freq_hz"
-    DUTY_CYCLE_OFF = "duty_minoff"
+    DUTY_CYCLE_OFF = "duty_cycle_off_min"
+
+
+class ParticipantMappingCsvColumn(str, Enum):
+    """
+    Enum to represent the columns in the CSV file containing the participant mapping.
+    """
+
+    PARTICIPANT_ID = "Participant_ID"
+    SV1_STIM1 = "SV1_STIM1"
+    SV1_STIM2 = "SV1_STIM2"
+    SV1_STIM3 = "SV1_STIM3"
+    SV2_STIM1 = "SV2_STIM1"
+    SV2_STIM2 = "SV2_STIM2"
+    SV2_STIM3 = "SV2_STIM3"
 
 
 @dataclass(frozen=True)
@@ -29,9 +57,6 @@ class StimSetting:
     """
     Data class to represent a stimulation setting.
     """
-
-    stim_option: int
-    """The stimulation option. A value between 1 and 6."""
 
     pulse_width: float
     """The pulse width in milliseconds."""
@@ -53,21 +78,65 @@ StimMapping = Dict[AnsPeriod, StimSetting]
 """A mapping from ANS period to stimulation settings."""
 
 
-def get_stim_settings(dataset_path: Path) -> Sequence[StimSetting]:
+def get_ans_stim_mapping(
+    dataset_path: Path,
+) -> Mapping[tuple[str, VisitID, AnsPeriod], StimSetting]:
     """
-    Get the stimulation settings from the CSV file.
+    Gets the mapping from participant ID, visit ID, and ANS period to stimulation settings.
 
     :param dataset_path: The path to the root directory of the dataset.
-    :return: A sequence of stimulation settings.
+    :return: A mapping from participant ID, visit ID, and ANS period to stimulation settings.
     """
-    stim_settings = pd.read_csv(dataset_path / STIM_SETTING_FILE_PATH)
-    return [
-        StimSetting(
-            stim_option=row[StimSettingCsvColumn.STIM_OPTION],
-            pulse_width=row[StimSettingCsvColumn.PULSE_WIDTH],
-            current=row[StimSettingCsvColumn.CURRENT],
-            frequency=row[StimSettingCsvColumn.FREQUENCY],
-            duty_cycle_off=row[StimSettingCsvColumn.DUTY_CYCLE_OFF],
+    stim_option_mapping = _get_stim_option_mapping(dataset_path)
+    participant_mapping = _get_participant_mapping(dataset_path)
+
+    return {
+        (participant_id, visit_id, ans_period): stim_option_mapping[stim_option]
+        for (participant_id, visit_id, ans_period), stim_option in participant_mapping.items()
+    }
+
+
+def _get_stim_option_mapping(dataset_path: Path) -> Mapping[StimOption, StimSetting]:
+    """
+    Gets the mapping from stimulation option to stimulation settings.
+
+    :param dataset_path: The path to the root directory of the dataset.
+    :return: A mapping from stimulation option to stimulation settings.
+    """
+    stim_settings = pd.read_csv(dataset_path / STIM_OPTION_MAPPING_FILE_PATH, delimiter="|")
+    return {
+        StimOption(row[StimOptionMappingCsvColumn.STIM_OPTION]): StimSetting(
+            pulse_width=row[StimOptionMappingCsvColumn.PULSE_WIDTH],
+            current=row[StimOptionMappingCsvColumn.CURRENT],
+            frequency=row[StimOptionMappingCsvColumn.FREQUENCY],
+            duty_cycle_off=row[StimOptionMappingCsvColumn.DUTY_CYCLE_OFF],
         )
         for _, row in stim_settings.iterrows()
-    ]
+    }
+
+
+def _get_participant_mapping(
+    dataset_path: Path,
+) -> Mapping[tuple[str, VisitID, AnsPeriod], StimOption]:
+    """
+    Gets the mapping from participant ID, visit ID, and ANS period to stim option.
+
+    :param dataset_path: The path to the root directory of the dataset.
+    :return: A mapping from participant ID, visit ID, and ANS period to stim option.
+    """
+
+    participant_mapping = pd.read_csv(dataset_path / PARTICIPANT_MAPPING_FILE_PATH, delimiter="|")
+
+    mapping = {}
+
+    col = ParticipantMappingCsvColumn
+    for _, row in participant_mapping.iterrows():
+        participant_id = row[col.PARTICIPANT_ID]
+        mapping[(participant_id, VisitID.SV1, AnsPeriod.STIM1)] = StimOption(row[col.SV1_STIM1])
+        mapping[(participant_id, VisitID.SV1, AnsPeriod.STIM2)] = StimOption(row[col.SV1_STIM2])
+        mapping[(participant_id, VisitID.SV1, AnsPeriod.STIM3)] = StimOption(row[col.SV1_STIM3])
+        mapping[(participant_id, VisitID.SV2, AnsPeriod.STIM1)] = StimOption(row[col.SV2_STIM1])
+        mapping[(participant_id, VisitID.SV2, AnsPeriod.STIM2)] = StimOption(row[col.SV2_STIM2])
+        mapping[(participant_id, VisitID.SV2, AnsPeriod.STIM3)] = StimOption(row[col.SV2_STIM3])
+
+    return mapping

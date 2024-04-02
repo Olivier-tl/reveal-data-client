@@ -8,6 +8,7 @@ from typing import Sequence
 import pandas as pd
 
 from reveal_data_client.constants import AnsPeriod, VisitID, VnsStatus
+from reveal_data_client.stim_setting import StimSetting, get_ans_stim_mapping
 from reveal_data_client.time_series.api import TimeSeriesClient
 from reveal_data_client.time_series.coarse.constants import CsvColumn
 from reveal_data_client.time_series.coarse.utils import extract_participant_id
@@ -33,6 +34,7 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
         :param dataset_path: The path to the root directory of the dataset.
         """
         self._participants_path = dataset_path / PRIMARY_DIR
+        self._stim_mapping = dict(get_ans_stim_mapping(dataset_path))
 
     def get_participant_ids(self) -> Sequence[str]:
         participant_folders = [f for f in self._participants_path.iterdir() if f.is_dir()]
@@ -78,6 +80,17 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
             & (data[CsvColumn.ANS_PERIOD] == ans_period)
             & (data[CsvColumn.ANS_STATUS] == vns_status)
         ]
+
+    def get_stim_setting(
+        self, participant_id: str, visit_id: VisitID, ans_period: AnsPeriod
+    ) -> StimSetting:
+        stim_setting = self._stim_mapping.get((participant_id, visit_id, ans_period))
+        if stim_setting is None:
+            raise ValueError(
+                f"No stimulation setting found for participant {participant_id}, visit {visit_id}, "
+                f"and ANS period {ans_period}."
+            )
+        return stim_setting
 
     @lru_cache(maxsize=MAX_CACHE_SIZE)
     def _load_data(self, participant_id: str) -> pd.DataFrame:
