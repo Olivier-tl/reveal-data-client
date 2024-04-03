@@ -5,6 +5,7 @@ from typing import Sequence
 
 from reveal_data_client.constants import AnsPeriod, VisitID, VnsStatus
 from reveal_data_client.time_series.coarse.client import CoarseTimeSeriesClient
+from reveal_data_client.types import ParticipantId
 
 PRIMARY_DIR = Path("primary")
 
@@ -30,18 +31,18 @@ class RevealDataClient:
         """
         self._coarse_ts_client = coarse_ts_client
 
-    def get_participant_ids(self) -> Sequence[str]:
+    def get_participant_ids(self) -> Sequence[ParticipantId]:
         """Get the participant IDs in the dataset."""
         # TODO: Refactor this in a separate MetadataClient class?
         return self._coarse_ts_client.get_participant_ids()
 
-    def get_visit_ids(self, participant_id: str) -> Sequence[VisitID]:
+    def get_visit_ids(self, participant_id: ParticipantId) -> Sequence[VisitID]:
         """Get the visit IDs for a participant."""
         # TODO: Refactor this in a separate MetadataClient class?
         return self._coarse_ts_client.get_visit_ids(participant_id)
 
     def get_ans_periods_and_vns_status(
-        self, participant_id: str, visit_id: VisitID
+        self, participant_id: ParticipantId, visit_id: VisitID
     ) -> Sequence[tuple[AnsPeriod, VnsStatus]]:
         """Get the ANS periods and VNS status for a participant and visit."""
         # TODO: Refactor this in a separate MetadataClient class?

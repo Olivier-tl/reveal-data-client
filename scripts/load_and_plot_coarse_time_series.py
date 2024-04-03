@@ -2,12 +2,14 @@
 
 import argparse
 import logging
+from dataclasses import asdict
 from pathlib import Path
 
 import plotly.express as px
 from utils import parse_args
 
 from reveal_data_client import RevealDataClient
+from reveal_data_client.constants import VnsStatus
 
 LOG = logging.getLogger(__name__)
 
@@ -53,6 +55,18 @@ def main(dataset_path: Path) -> None:
                     f"Elapsed time: {elapsed}, sampling rate: {sampling_rate} Hz.\n"
                     f"Plot saved to {fig_path}\n"
                 )
+                if vns_status == VnsStatus.ON:
+                    try:
+                        stim = client.coarse_time_series.get_stim_setting(
+                            participant_id, visit_id, ans_period
+                        )
+                        LOG.info(
+                            f"Stim setting for participant {participant_id}, visit {visit_id}, ANS period {ans_period}: {asdict(stim)}\n"
+                        )
+                    except ValueError:
+                        LOG.error(
+                            f"Stim setting not found for participant {participant_id}, visit {visit_id}, ANS period {ans_period}\n"
+                        )
 
 
 if __name__ == "__main__":
