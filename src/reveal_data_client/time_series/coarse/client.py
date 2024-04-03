@@ -7,11 +7,12 @@ from typing import Sequence
 
 import pandas as pd
 
-from reveal_data_client.constants import AnsPeriod, VisitID, VnsStatus
+from reveal_data_client.constants import CSV_DELIMITER, AnsPeriod, VisitID, VnsStatus
 from reveal_data_client.stim_setting import StimSetting, get_ans_stim_mapping
 from reveal_data_client.time_series.api import TimeSeriesClient
 from reveal_data_client.time_series.coarse.constants import CsvColumn
 from reveal_data_client.time_series.coarse.utils import extract_participant_id
+from reveal_data_client.types import ParticipantId
 
 PRIMARY_DIR = Path("primary")
 ANS_DIR = Path("ANS")
@@ -36,7 +37,7 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
         self._participants_path = dataset_path / PRIMARY_DIR
         self._stim_mapping = dict(get_ans_stim_mapping(dataset_path))
 
-    def get_participant_ids(self) -> Sequence[str]:
+    def get_participant_ids(self) -> Sequence[ParticipantId]:
         participant_folders = [f for f in self._participants_path.iterdir() if f.is_dir()]
         ids = []
         for participant_folder in participant_folders:
@@ -50,7 +51,7 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
                 )
         return ids
 
-    def get_visit_ids(self, participant_id: str) -> Sequence[VisitID]:
+    def get_visit_ids(self, participant_id: ParticipantId) -> Sequence[VisitID]:
         # TODO: Get the visit IDs from the files in the "By Period" folder once available.
         #      For now, load the visit IDs from the data file.
         data = self._load_data(participant_id)
@@ -58,7 +59,7 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
         return [VisitID(id) for id in data[CsvColumn.VISIT_ID].unique()]
 
     def get_ans_periods_and_vns_status(
-        self, participant_id: str, visit_id: VisitID
+        self, participant_id: ParticipantId, visit_id: VisitID
     ) -> Sequence[tuple[AnsPeriod, VnsStatus]]:
         """Gets unique pairs of ANS periods and VNS status for a participant and visit."""
         data = self._load_data(participant_id)
@@ -71,7 +72,11 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
         ]
 
     def get_data_for_ans_period(
-        self, participant_id: str, visit_id: VisitID, ans_period: AnsPeriod, vns_status: VnsStatus
+        self,
+        participant_id: ParticipantId,
+        visit_id: VisitID,
+        ans_period: AnsPeriod,
+        vns_status: VnsStatus,
     ) -> pd.DataFrame:
         data = self._load_data(participant_id)
         return data[
@@ -82,7 +87,7 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
         ]
 
     def get_stim_setting(
-        self, participant_id: str, visit_id: VisitID, ans_period: AnsPeriod
+        self, participant_id: ParticipantId, visit_id: VisitID, ans_period: AnsPeriod
     ) -> StimSetting:
         stim_setting = self._stim_mapping.get((participant_id, visit_id, ans_period))
         if stim_setting is None:
@@ -93,7 +98,7 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
         return stim_setting
 
     @lru_cache(maxsize=MAX_CACHE_SIZE)
-    def _load_data(self, participant_id: str) -> pd.DataFrame:
+    def _load_data(self, participant_id: ParticipantId) -> pd.DataFrame:
 
         file_path = (
             self._participants_path
@@ -106,7 +111,7 @@ class CoarseTimeSeriesClient(TimeSeriesClient):
         # we should use a more memory-efficient approach. The current sample file
         # is 200MB, which is fine, but we should validate that the full dataset
         # is not too large to fit into memory.
-        df = pd.read_csv(file_path, delimiter="|")
+        df = pd.read_csv(file_path, delimiter=CSV_DELIMITER)
 
         # Convert the time in seconds to a timedelta and set it as the index
         df[CsvColumn.index_col()] = pd.to_timedelta(df[CsvColumn.index_col()], unit="s")

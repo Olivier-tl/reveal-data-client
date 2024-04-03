@@ -7,7 +7,8 @@ from typing import Dict, Mapping
 
 import pandas as pd
 
-from reveal_data_client.constants import AnsPeriod, VisitID
+from reveal_data_client.constants import CSV_DELIMITER, AnsPeriod, VisitID
+from reveal_data_client.types import ParticipantId
 
 STIM_OPTION_MAPPING_FILE_PATH = "docs/rc_rand_vns_stim_parameters.csv"
 PARTICIPANT_MAPPING_FILE_PATH = "docs/rc_rand_ans_participant_stim_settings.csv"
@@ -80,7 +81,7 @@ StimMapping = Dict[AnsPeriod, StimSetting]
 
 def get_ans_stim_mapping(
     dataset_path: Path,
-) -> Mapping[tuple[str, VisitID, AnsPeriod], StimSetting]:
+) -> Mapping[tuple[ParticipantId, VisitID, AnsPeriod], StimSetting]:
     """
     Gets the mapping from participant ID, visit ID, and ANS period to stimulation settings.
 
@@ -103,7 +104,9 @@ def _get_stim_option_mapping(dataset_path: Path) -> Mapping[StimOption, StimSett
     :param dataset_path: The path to the root directory of the dataset.
     :return: A mapping from stimulation option to stimulation settings.
     """
-    stim_settings = pd.read_csv(dataset_path / STIM_OPTION_MAPPING_FILE_PATH, delimiter="|")
+    stim_settings = pd.read_csv(
+        dataset_path / STIM_OPTION_MAPPING_FILE_PATH, delimiter=CSV_DELIMITER
+    )
     return {
         StimOption(row[StimOptionMappingCsvColumn.STIM_OPTION]): StimSetting(
             pulse_width=row[StimOptionMappingCsvColumn.PULSE_WIDTH],
@@ -117,7 +120,7 @@ def _get_stim_option_mapping(dataset_path: Path) -> Mapping[StimOption, StimSett
 
 def _get_participant_mapping(
     dataset_path: Path,
-) -> Mapping[tuple[str, VisitID, AnsPeriod], StimOption]:
+) -> Mapping[tuple[ParticipantId, VisitID, AnsPeriod], StimOption]:
     """
     Gets the mapping from participant ID, visit ID, and ANS period to stim option.
 
@@ -125,7 +128,9 @@ def _get_participant_mapping(
     :return: A mapping from participant ID, visit ID, and ANS period to stim option.
     """
 
-    participant_mapping = pd.read_csv(dataset_path / PARTICIPANT_MAPPING_FILE_PATH, delimiter="|")
+    participant_mapping = pd.read_csv(
+        dataset_path / PARTICIPANT_MAPPING_FILE_PATH, delimiter=CSV_DELIMITER
+    )
 
     mapping = {}
 

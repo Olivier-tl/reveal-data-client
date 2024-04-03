@@ -60,3 +60,7 @@ class VnsStatus(str, Enum):
 
     OFF = "OFF"
     """VNS is off"""
+
+
+CSV_DELIMITER = "|"
+"""The delimiter used in the CSV file."""
