@@ -26,11 +26,8 @@ def parse_args() -> argparse.Namespace:
 
 def plot_edf(edf_file_path: Path) -> None:
     """Read the EDF file using pyedflib."""
-    file_path = str(edf_file_path)
-    print("Reading EDF file %s" % file_path)
-    f = EdfReader(
-        file_path, annotations_mode=DO_NOT_READ_ANNOTATIONS, check_file_size=DO_NOT_CHECK_FILE_SIZE
-    )
+    print("Reading EDF file %s" % edf_file_path)
+    f = EdfReader(str(edf_file_path))
     figure = go.Figure()
     for i in np.arange(f.signals_in_file):
 
