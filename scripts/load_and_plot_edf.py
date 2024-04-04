@@ -3,12 +3,9 @@
 import argparse
 from pathlib import Path
 
-import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
-from mne.export import export_raw
-from mne.io import read_raw_edf
-from pyedflib import DO_NOT_CHECK_FILE_SIZE, DO_NOT_READ_ANNOTATIONS, EdfReader
+from pyedflib import  EdfReader
 
 
 def parse_args() -> argparse.Namespace:
