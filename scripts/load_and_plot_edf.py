@@ -22,7 +22,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def load_and_plot_edf(edf_file_path: Path) -> None:
-    
+
     print("Reading EDF file %s" % edf_file_path)
     f = EdfReader(str(edf_file_path))
     figure = go.Figure()
@@ -62,4 +62,4 @@ def load_and_plot_edf(edf_file_path: Path) -> None:
 
 if __name__ == "__main__":
     args = parse_args()
-    plot_edf(args.edf_file_path)
+    load_and_plot_edf(args.edf_file_path)
