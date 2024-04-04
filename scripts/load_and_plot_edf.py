@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import plotly.graph_objects as go
-from pyedflib import  EdfReader
+from pyedflib import EdfReader
 
 
 def parse_args() -> argparse.Namespace:
@@ -52,12 +52,6 @@ def plot_edf(edf_file_path: Path) -> None:
         print(
             f"Plotted signal {signal_label} ({signal_sample_rate} Hz) with metadata {signal_metadata}"
         )
-
-    figure.update_layout(title="ANS Testing Data", xaxis_title="Time (s)", yaxis_title="Amplitude")
-
-    # Save the plot to html
-    file_name = edf_file_path.stem + ".html"
-    figure.write_html(file_name)
 
     figure.update_layout(title="ANS Testing Data", xaxis_title="Time (s)", yaxis_title="Amplitude")
 
