@@ -21,8 +21,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def plot_edf(edf_file_path: Path) -> None:
-    """Read the EDF file using pyedflib."""
+def load_and_plot_edf(edf_file_path: Path) -> None:
+    
     print("Reading EDF file %s" % edf_file_path)
     f = EdfReader(str(edf_file_path))
     figure = go.Figure()
