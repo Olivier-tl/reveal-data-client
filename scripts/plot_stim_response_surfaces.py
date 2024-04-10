@@ -7,12 +7,15 @@ from typing import Sequence
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import scipy.stats
 from scipy.interpolate import griddata
 from utils import parse_args
 
 from reveal_data_client import RevealDataClient
 from reveal_data_client.constants import VnsStatus
 from reveal_data_client.stim_setting import StimSetting, get_ans_stim_mapping
+
+CONFIDENCE_INTERVAL = 0.95
 
 
 def get_stim_on_times(
@@ -251,8 +254,8 @@ def plot_physio_change(physio_change: PhysioChange) -> go.Figure:
 def stim_to_str(stim: StimSetting) -> str:
     """Convert the stimulation setting to a small string."""
     return (
-        f"{stim.pulse_width} ms, {stim.current} mA, {stim.frequency} Hz {stim.duty_cycle_off}",
-        f"min OFF, {stim.duty_cycle_on} min ON",
+        f"{stim.pulse_width} ms, {stim.current} mA, {stim.frequency} Hz {stim.duty_cycle_off}"
+        f"min OFF, {stim.duty_cycle_on} min ON"
     )
 
 
@@ -271,10 +274,11 @@ def get_surfaces_fig(
     """
     fig = go.Figure()
 
-    # Compute 95% confidence intervals
+    # Compute confidence intervals
+    z_score = scipy.stats.norm.ppf(1 - (1 - CONFIDENCE_INTERVAL) / 2)
     ci = df.groupby([x_col, y_col])[z_col].agg(["mean", "std"]).reset_index()
-    ci["ci_low"] = ci["mean"] - 1.96 * ci["std"]
-    ci["ci_high"] = ci["mean"] + 1.96 * ci["std"]
+    ci["ci_low"] = ci["mean"] - z_score * ci["std"]
+    ci["ci_high"] = ci["mean"] + z_score * ci["std"]
     ci["ci_low"] = ci["ci_low"].fillna(ci["mean"])
     ci["ci_high"] = ci["ci_high"].fillna(ci["mean"])
 
@@ -329,7 +333,7 @@ def get_surfaces_fig(
             x=xi,
             y=yi,
             z=ci_low,
-            name="mean - 1.96 * std",
+            name=f"{CONFIDENCE_INTERVAL} confidence interval",
             showscale=False,
             opacity=0.5,
         )
@@ -340,7 +344,7 @@ def get_surfaces_fig(
             x=xi,
             y=yi,
             z=ci_high,
-            name="mean + 1.96 * std",
+            name=f"{CONFIDENCE_INTERVAL} confidence interval",
             showscale=False,
             opacity=0.5,
         )
